@@ -46,7 +46,7 @@ function draw() {
     var frequency = 0.1;
     var amplitude = 127;
     var center = 128;
-    var v = Math.sin(frequency*i) * amplitude + center;
+    var v = Math.floor(Math.sin(frequency*i) * amplitude + center);
     var red   = Math.floor(Math.sin(frequency*i + 0) * 127 + 128);
     var green = Math.floor(Math.sin(frequency*i + 2) * 127 + 128);
     var blue  = Math.floor(Math.sin(frequency*i + 4) * 127 + 128);
@@ -59,7 +59,7 @@ function draw() {
     toggle = !toggle;
     console.log(rgbToColor(red, green, blue));
 
-    context.fillStyle = rgbToColor(red, green, blue);
+    context.fillStyle = rgbToColor(v, v, v);
     context.beginPath();
     context.arc( x, y, 10, 0, Math.PI * 2, true );
     context.closePath();
