@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script src='https://cdn.firebase.com/v0/firebase.js'></script>
+    <script src='/accelerometer-play/js/pattern-detection.js'></script>
+    <script src="js/raphael-min.js"></script>
+    <script src="js/g.raphael-min.js"></script>
+    <script src="js/g.line-min.js"></script>
+    <script>
+        var patternDetection = new PatternDetection();
+
+        window.onload = function () {
+
+            var dataid = location.search.replace("?",'');
+
+            var dataRef = new Firebase('https://skypefoosballscore.firebaseio.com/matches/'+dataid+'/logs').limit(20);
+            //var dataRef = new Firebase('https://skypefoosballscore.firebaseio.com/live/logs').limit(20);
+            var matchesRef = new Firebase('https://skypefoosballscore.firebaseio.com/matches/').limit(10);
+
+
+            dataRef.on('value', function (snapshot) {
+                    var chartData = buildChartData(snapshot);
+                    var graphHolder = document.getElementById('graphHolder').innerHTML = "";
+                    var r = Raphael("graphHolder", 1600, 500);
+                    r.linechart(10, 10, 1500, 400, chartData.legend, [chartData.z], {axis: "0 0 1 1"});
+
+
+
+            } );
+            matchesRef.once('value', function (snapshot) {
+                var matches = snapshot.val(), html ="", el = document.getElementById('links');
+
+                for (var i in matches) {
+                    if( matches.hasOwnProperty( i ) ) {
+                        console.log(i);
+                        var time = new Date(parseInt(i,10));
+                        html += '<li><a href="charts.html?'+ i + '">' + time + '</a></li>';
+                    }
+
+                }
+                el.innerHTML = html;
+
+            })
+
+
+
+
+
+        };
+
+        var buildChartData = function (snapshot) {
+            var data = snapshot.val(),
+                    xCo = [], yCo = [], zCo = [], legend = [];
+
+            console.log(data);
+
+            var x = 0;
+
+            patternDetection.addPatternListener(['up','down'], function () {
+                //alert('match');
+            })
+
+            for (var i in data) {
+                console.log(data[i].x);
+                //patternDetection.step(data[i].z);
+
+                xCo.push(data[i].x);
+                yCo.push(data[i].y);
+                zCo.push(data[i].z);
+                legend.push(data[i].timestamp);
+                x++;
+
+            }
+            //console.log(patternDetection.getPatternsFound());
+
+
+            return {
+                x: xCo,
+                y: yCo,
+                z: zCo,
+                legend: legend
+
+            }
+
+
+        }
+
+    </script>
+</head>
+<body>
+<div id="graphHolder"></div>
+<ul id="links">
+
+</ul>
+
+</body>
+</html>

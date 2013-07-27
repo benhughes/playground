@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script src='https://cdn.firebase.com/v0/firebase.js'></script>
+    <script src='/accelerometer-play/js/pattern-detection.js'></script>
+    <script>
+
+        window.onload = function () {
+            var dataid = location.search.replace("?",'');
+            var patternDetection = new PatternDetection();
+
+            var dataRef = new Firebase('https://skypefoosballscore.firebaseio.com/matches/'+dataid+'/logs');
+            var matchesRef = new Firebase('https://skypefoosballscore.firebaseio.com/matches/').limit(10);
+
+            dataRef.once('value', function (snapshot) {
+                var data = snapshot.val();
+                for (var i in data) {
+                    patternDetection.step(data[i].z);
+                }
+                console.log(patternDetection.getPatternsFound());
+            } );
+            matchesRef.once('value', function (snapshot) {
+                var matches = snapshot.val(), html ="", el = document.getElementById('links');
+                console.log(matches);
+
+                for (var i in matches) {
+                    if( matches.hasOwnProperty( i ) ) {
+                        console.log(i);
+                        var time = new Date(parseInt(i,10));
+                        html += '<li><a href="pattern-tester.html?'+ i + '">' + time + '</a></li>';
+                    }
+
+                }
+                el.innerHTML = html;
+
+            })
+
+
+
+
+
+
+
+        };
+
+
+
+
+
+    </script>
+
+</head>
+<body>
+<ul id="links">
+    <div id="patternDetectionFeedback"></div>
+
+
+</body>
+</html>

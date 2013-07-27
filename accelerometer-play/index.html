@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script src='https://cdn.firebase.com/v0/firebase.js'></script>
+    <script src='/accelerometer-play/js/pattern-detection.js'></script>
+    <script src="js/raphael-min.js"></script>
+    <script src="js/g.raphael-min.js"></script>
+    <script src="js/g.line-min.js"></script>
+    <style>
+        #buttons a {
+            display: block;
+            font-size: 40px;
+        }
+    </style>
+</head>
+<body>
+<p>hi</p>
+<div id="buttons">
+    <a href="#" id="start">Start</a>
+    <a href="#" id="stop">Stop</a>
+</div>
+<div id="graphHolder"></div>
+<div id="messages"></div>
+<div id="patternDetectionFeedback"></div>
+<div id="feedBackMotion"></div>
+<div id="isItAHit"></div>
+<div id="feedBackOrientation"></div>
+<ul id="log"></ul>
+<audio id="audioPlayer"></audio>
+<script>
+    var goalMonitor = (function () {
+        var sensitivity = 0.5,
+            firebaseLog,
+            fireBaseGoals,
+            xLegend = [],
+            patternDetection = new PatternDetection(),
+            matchID = new Date().getTime(),
+            count = false,
+            el = {
+                feedBackMotion: null,
+                feedBackOrientation: null
+            },
+            hitCount = 0,
+            previousAcc = {
+                x: 0
+            },
+            setUpFirebase = function () {
+                firebaseLog = new Firebase('https://skypefoosballscore.firebaseio.com/matches/'+ matchID + '/logs/');
+                fireBaseGoals = new Firebase('https://skypefoosballscore.firebaseio.com/matches/'+ matchID + "/goals/");
+            },
+            bindEvents = function () {
+                var start = document.getElementById('start');
+                var stop = document.getElementById('stop');
+                start.onclick = startClick;
+                stop.onclick = stopClick;
+            },
+            bindMotionEvents = function () {
+                window.ondevicemotion = onDeviceMotion;
+                window.ondeviceorientation = onDeviceOrientation;
+
+            },
+            removeEvents = function () {
+                window.ondevicemotion = "";
+                window.ondeviceorientation = "";
+
+            },
+            startClick = function () {
+                console.log('start click detected');
+                matchID = new Date().getTime();
+                setUpFirebase();
+                bindMotionEvents();
+            },
+            stopClick = function () {
+                console.log('stop click detected');
+                removeEvents();
+            },
+            goalMatch = function () {
+                hitCount++;
+                console.log("goal");
+
+            },
+            onDeviceMotion = function () {
+                el.feedBackMotion = (!el.feedBackMotion) ? document.getElementById('feedBackMotion') : el.feedBackMotion;
+
+                var x = roundTo(event.accelerationIncludingGravity.x, 2),
+                    z = roundTo(event.accelerationIncludingGravity.z, 2),
+                        isAGoal = wasItAHit(previousAcc.x, x);
+                firebaseLog.push({
+                    timestamp: new Date().getTime(),
+                    x: event.accelerationIncludingGravity.x,
+                    y: event.accelerationIncludingGravity.y,
+                    z: event.accelerationIncludingGravity.z
+                });
+
+                patternDetection.step(z);
+
+                el.feedBackMotion.innerHTML = "<ul><li>Hitcount: " + hitCount + "</li><li>X: " + x + " " + isAGoal + " " + (previousAcc.x - x) + "</li><li>Y: " + event.accelerationIncludingGravity.y + "</li><li>Z:" + event.accelerationIncludingGravity.z + "</li></ul>";
+                //log.innerHTML = "<li>x: " + x + " prev x: " + previousAcc.x + " " + isBigHit + "</li>" + log.innerHTML;
+                previousAcc = {x: x};
+                
+            },
+            onDeviceOrientation = function () {
+                el.messages = (!el.messages) ? document.getElementById('messages') : el.messages;
+                if (event.beta < -1 || event.beta > 1) {
+
+                    el.messages.innerHTML = "<h1>please place the phone on a flat surface</h1>";
+                    count = false;
+
+                } else {
+                    el.messages.innerHTML = "<h1></h1>";
+                    count = true;
+                }
+//                firebaseLog.push({
+//                    timestamp: new Date().getTime(),
+//                    x: event.alpha,
+//                    y: event.beta,
+//                    z: event.gamma
+//                });
+                feedBackOrientation = (!feedBackOrientation) ? document.getElementById('feedBackOrientation') : feedBackOrientation;
+                feedBackOrientation.innerHTML = "<ul><li>Alpha: " + event.alpha + "</li><li>Beta: " + event.beta + "</li><li>Gamma: " + event.gamma + "</li></ul>";
+            },
+            wasItAHit = function (previousAttribute, newAttribute) {
+                return count && (previousAttribute - newAttribute) < -sensitivity || (previousAcc - newAttribute) > sensitivity;
+            },
+            roundTo = function (number, decimalPlace) {
+                decimalPlace = (decimalPlace) ? decimalPlace : 0;
+                decimalPlace = Math.pow(10, decimalPlace);
+                return Math.floor(number * decimalPlace) / decimalPlace;
+            }
+
+        return {
+            init: function () {
+                setUpFirebase();
+                bindEvents();
+                patternDetection.settings({buffer: 0.1});
+                patternDetection.addPatternListener(['up','down'], goalMatch.bind(this));
+                patternDetection.addPatternListener(['down','up'], goalMatch.bind(this));
+//                patternDetection.step(-6);
+//                patternDetection.step(-6);
+//                patternDetection.step(-6);
+//                patternDetection.step(-6);
+//                patternDetection.step(-6);
+//                patternDetection.step(6);
+//                patternDetection.step(-6);
+//                patternDetection.step(-9);
+//                patternDetection.step(-6);
+//                patternDetection.step(-6);
+//                patternDetection.step(-6);
+
+
+
+
+            }
+        }
+        
+        
+        
+    })()
+    goalMonitor.init();
+
+    
+    
+    
+
+</script>
+
+</body>
+</html>
